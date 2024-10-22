@@ -2,14 +2,29 @@ const express = require('express');
 const router = express.Router();
 router.use(express.json());
 router.use(express.urlencoded({extended:true}));
+const jwt = require('jsonwebtoken')
 
 const empModel = require('../model/employeeData');
-const employeeData = require('../model/employeeData');
+
+
+
+//Adding middleware
+function verifyToken(req, res, next) {
+    let token = req.headers.token;
+    try {
+        if(!token) throw 'Unathorised Access'
+        let payload = jwt.verify(token, "secret")
+        if(!payload) throw 'Unathorised Access'
+        next()
+    } catch (error) {
+        res.json({message:error})
+    }
+}
 
 
 
 //get
-router.get('/', async(req,res) => {
+router.get('/', verifyToken, async(req,res) => {
     try {
         const data = await empModel.find();
         res.status(200).send(data);
@@ -21,7 +36,7 @@ router.get('/', async(req,res) => {
 
 
 //post
-router.post('/post', async(req,res) => {
+router.post('/post', verifyToken, async(req,res) => {
     try {
         var item = req.body;
     const data = new empModel(item);
@@ -33,7 +48,7 @@ router.post('/post', async(req,res) => {
 })
 
 //put
-router.put('/put/:id', async(req,res) => {
+router.put('/put/:id', verifyToken, async(req,res) => {
     try {
         const id = req.params.id;
         const data = await empModel.findByIdAndUpdate(id, req.body);
@@ -45,7 +60,7 @@ router.put('/put/:id', async(req,res) => {
 })
 
 //delete
-router.delete('/delete/:id', async(req,res) => {
+router.delete('/delete/:id', verifyToken, async(req,res) => {
     try {
         const id = req.params.id;
         const data = await empModel.findByIdAndDelete(id, req.body);
